@@ -14,7 +14,9 @@ defmodule DdeIotserverLiveview.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: DdeIotserverLiveview.PubSub},
       # Start the Endpoint (http/https)
-      DdeIotserverLiveviewWeb.Endpoint
+      DdeIotserverLiveviewWeb.Endpoint,
+      # Start the Mqtt Receiver
+      Receiver.Mqtt
       # Start a worker by calling: DdeIotserverLiveview.Worker.start_link(arg)
       # {DdeIotserverLiveview.Worker, arg}
     ]
