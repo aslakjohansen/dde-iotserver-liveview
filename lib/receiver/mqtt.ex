@@ -1,7 +1,6 @@
 defmodule Receiver.Mqtt do
   use Tortoise.Handler
 
-#  def main(_args \\ []) do
   def start_link(_opts) do
     args = "mqtt_config.json"
     |> File.read!()
@@ -12,16 +11,8 @@ defmodule Receiver.Mqtt do
     |> parse_args()
     |> startup()
     
-#    case success do
-#      {:ok} ->
-#        IO.puts("success")
-#      {_} ->
-#        IO.puts("failure")
-#    end
-    
     IO.gets "Working... To finish hit <Enter>."
     
-#    {:ok, args}
     {:ok, dispatcher_pid}
   end
   
