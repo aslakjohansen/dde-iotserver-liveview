@@ -7,6 +7,8 @@ defmodule DdeIotserverLiveview.Application do
 
   def start(_type, _args) do
     children = [
+      # Start the Ecto database repository
+      {DB.Repo, []},
       # Start the Ecto repository
       DdeIotserverLiveview.Repo,
       # Start the Telemetry supervisor

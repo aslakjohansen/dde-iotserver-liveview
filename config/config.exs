@@ -7,8 +7,14 @@
 # General application configuration
 use Mix.Config
 
+config :dde_iotserver_liveview, DB.Repo,
+  database: "dde_iotserver_liveview_repo",
+  username: "someuser",
+  password: "somepassword",
+  hostname: "localhost"
+
 config :dde_iotserver_liveview,
-  ecto_repos: [DdeIotserverLiveview.Repo]
+  ecto_repos: [DdeIotserverLiveview.Repo, DB.Repo]
 
 # Configures the endpoint
 config :dde_iotserver_liveview, DdeIotserverLiveviewWeb.Endpoint,
