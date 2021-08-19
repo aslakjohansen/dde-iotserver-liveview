@@ -18,10 +18,12 @@ defmodule DB.Stream do
   end
   
   def ensure(device_id, sensor_id) do
+    # make sure record exists
     %DB.Stream{device_id: device_id, sensor_id: sensor_id}
     |> changeset(%{})
     |> DB.Repo.insert(on_conflict: :nothing)
     
+    # look up record
     DB.Stream
     |> Ecto.Query.where([s], s.device_id==^device_id)
     |> Ecto.Query.where([s], s.sensor_id==^sensor_id)
