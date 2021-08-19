@@ -11,7 +11,7 @@ defmodule Receiver.Mqtt do
     |> parse_args()
     |> startup()
     
-    IO.gets "Working... To finish hit <Enter>."
+#    IO.gets "Working... To finish hit <Enter>."
     
     {:ok, dispatcher_pid}
   end
