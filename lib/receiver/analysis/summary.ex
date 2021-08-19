@@ -30,18 +30,18 @@ defmodule Receiver.Analysis.Summary do
     timestamp = parse_time(Map.get(payload, "TimeStamp"))
     value     = Map.get(payload, "Value")
     wentry = [t: timestamp, v: value]
-    time = DateTime.utc_now() |> DateTime.to_unix(:nanosecond)
-    :ok = IO.puts("consume #{stream_id} #{time} #{timestamp} -> #{value}\n")
+    _time = DateTime.utc_now() |> DateTime.to_unix(:nanosecond)
+#    :ok = IO.puts("consume #{stream_id} #{time} #{timestamp} -> #{value}\n")
     {:noreply, {stream_id, [wentry]++window}}
   end
   
   @impl GenServer
   def handle_cast({:sample}, {stream_id, window}) do
-    :ok = IO.puts("sample #{stream_id}\n")
+#    :ok = IO.puts("sample #{stream_id}\n")
     time = (DateTime.utc_now() |> DateTime.to_unix(:nanosecond)) - 3600*1000000000
-    {newwindow, result} = analyze(window, time, [], [], nil, stream_id)
-    time = DateTime.utc_now() |> DateTime.to_unix(:nanosecond)
-    IO.inspect(result, label: "Results [ #{stream_id} ] #{time} ")
+    {newwindow, _result} = analyze(window, time, [], [], nil, stream_id)
+    _time = DateTime.utc_now() |> DateTime.to_unix(:nanosecond)
+#    IO.inspect(result, label: "Results [ #{stream_id} ] #{time} ")
     {:noreply, {stream_id, newwindow}}
   end
   
@@ -92,16 +92,16 @@ defmodule Receiver.Analysis.Summary do
             count: context[:count]+1,
           ]++newdiffcontext
         end
-        IO.inspect(newcontext, label: "analyze #{stream_id} [ht]-succ value=#{value}")
+#        IO.inspect(newcontext, label: "analyze #{stream_id} [ht]-succ value=#{value}")
         {list, resultcontext} = analyze(tail, threshold, newcontext, newdiffcontext, head, stream_id)
         {[head]++list, resultcontext}
       _ ->
-        IO.inspect(context, label: "analyze #{stream_id} [ht]-fail ")
+#        IO.inspect(context, label: "analyze #{stream_id} [ht]-fail ")
         {[], context}
     end
   end
-  defp analyze([], _threshold, context, _diffcontext, _last, stream_id) do
-    IO.inspect(context, label: "analyze #{stream_id} [] ")
+  defp analyze([], _threshold, context, _diffcontext, _last, _stream_id) do
+#    IO.inspect(context, label: "analyze #{stream_id} [] ")
     {[], context}
   end
   
@@ -113,7 +113,7 @@ defmodule Receiver.Analysis.Summary do
   defp sampler(pid, period) do
     GenServer.cast(pid, {:sample})
     period_ms = 1000*period
-    IO.puts("sampler #{period}")
+#    IO.puts("sampler #{period}")
     :timer.sleep(period_ms)
     sampler(pid, period)
   end
