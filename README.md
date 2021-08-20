@@ -1,24 +1,23 @@
 # DdeIotserverLiveview
 
-To start your Phoenix server:
+Start shell in VM running the application:
+```shell
+iex -S mix
+```
 
-  * Install dependencies with `mix deps.get`
-  * Create and migrate your database with `mix ecto.setup`
-  * Install Node.js dependencies with `npm install` inside the `assets` directory
-  * Start Phoenix endpoint with `mix phx.server`
+Various imports:
+```elxir
+import NaiveDateTime
+import Ecto.Query
+```
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+Insert a raw timeseries:
+```elxir
+DB.RawTimeseries.insert(DB.Stream.ensure("dev1", "sens3"), NaiveDateTime.from_gregorian_seconds(42), 42.0)
+```
 
-Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
+List stored raw timeseries:
+```elxir
+DB.Repo.all(Ecto.Query.from(DB.RawTimeseries))
+```
 
-## Setup
-
-Create databases: `mix ecto.create`
-
-## Learn more
-
-  * Official website: https://www.phoenixframework.org/
-  * Guides: https://hexdocs.pm/phoenix/overview.html
-  * Docs: https://hexdocs.pm/phoenix
-  * Forum: https://elixirforum.com/c/phoenix-forum
-  * Source: https://github.com/phoenixframework/phoenix
