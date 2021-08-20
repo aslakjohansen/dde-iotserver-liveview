@@ -24,12 +24,14 @@ defmodule Receiver.Dispatch do
   @impl GenServer
   def handle_cast({:dispatch, _topic, payload}, {table}) do
     payload = Jason.decode!(payload)
-    stream_id = Map.get(payload, "DeviceID") <> ":" <> Map.get(payload, "SensorID")
+    device_id = Map.get(payload, "DeviceID")
+    sensor_id = Map.get(payload, "SensorID")
+    stream_id = device_id <> ":" <> sensor_id
     
     # make sure fanout structure is in place
     generator = fn ->
       Enum.into(Enum.map(@analyses, fn {name, mod} ->
-        {:ok, pid} = mod.start(stream_id)
+        {:ok, pid} = mod.start(device_id, sensor_id, stream_id)
         {name, {mod, pid}}
       end), %{})
     end
