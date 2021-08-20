@@ -6,18 +6,18 @@ iex -S mix
 ```
 
 Various imports:
-```elxir
+```elixir
 import NaiveDateTime
 import Ecto.Query
 ```
 
 Insert a raw timeseries:
-```elxir
+```elixir
 DB.RawTimeseries.insert(DB.Stream.ensure("dev1", "sens3"), NaiveDateTime.from_gregorian_seconds(42), 42.0)
 ```
 
 List stored raw timeseries:
-```elxir
+```elixir
 DB.Repo.all(Ecto.Query.from(DB.RawTimeseries))
 ```
 
