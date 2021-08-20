@@ -27,6 +27,12 @@ defmodule Receiver.Dispatch do
     device_id = Map.get(payload, "DeviceID")
     sensor_id = Map.get(payload, "SensorID")
     stream_id = device_id <> ":" <> sensor_id
+    time  = Map.get(payload, "TimeStamp") |> NaiveDateTime.from_iso8601!() |> NaiveDateTime.truncate(:second)
+    value = Map.get(payload, "Value")
+    
+    # TODO: cache stream
+    DB.Stream.ensure(device_id, sensor_id)
+    |> DB.RawTimeseries.insert(time, value)
     
     # make sure fanout structure is in place
     generator = fn ->

@@ -4,7 +4,8 @@ defmodule Receiver.Analysis.Summary do
   # behaviour functions
   
   def start(device_id, sensor_id, stream_id) do
-    GenServer.start(__MODULE__, {device_id, sensor_id, stream_id})
+    stream = DB.Stream.ensure(device_id, sensor_id) # not used
+    GenServer.start(__MODULE__, {device_id, sensor_id, stream_id, stream})
   end
   
   def consume(pid, payload) do
@@ -14,7 +15,7 @@ defmodule Receiver.Analysis.Summary do
   # callback functions
   
   @impl GenServer
-  def init({device_id, sensor_id, stream_id}) do
+  def init({device_id, sensor_id, stream_id, stream}) do
     # spawn process that periodically pings :sample. Period from opts
     server_pid = self()
 #    period = 3600/3
@@ -22,27 +23,27 @@ defmodule Receiver.Analysis.Summary do
     period = 60*60
     _sampler_pid = spawn(fn -> sampler(server_pid, period) end)
     
-    {:ok, {device_id, sensor_id, stream_id, []}}
+    {:ok, {device_id, sensor_id, stream_id, stream, []}}
   end
   
   @impl GenServer
-  def handle_cast({:consume, payload}, {device_id, sensor_id, stream_id, window}) do
+  def handle_cast({:consume, payload}, {device_id, sensor_id, stream_id, stream, window}) do
     timestamp = parse_time(Map.get(payload, "TimeStamp"))
     value     = Map.get(payload, "Value")
     wentry = [t: timestamp, v: value]
     _time = DateTime.utc_now() |> DateTime.to_unix(:nanosecond)
 #    :ok = IO.puts("consume #{stream_id} #{time} #{timestamp} -> #{value}\n")
-    {:noreply, {device_id, sensor_id, stream_id, [wentry]++window}}
+    {:noreply, {device_id, sensor_id, stream_id, stream, [wentry]++window}}
   end
   
   @impl GenServer
-  def handle_cast({:sample}, {device_id, sensor_id, stream_id, window}) do
+  def handle_cast({:sample}, {device_id, sensor_id, stream_id, stream, window}) do
 #    :ok = IO.puts("sample #{stream_id}\n")
     time = (DateTime.utc_now() |> DateTime.to_unix(:nanosecond)) - 3600*1000000000
     {newwindow, _result} = analyze(window, time, [], [], nil, stream_id)
     _time = DateTime.utc_now() |> DateTime.to_unix(:nanosecond)
 #    IO.inspect(result, label: "Results [ #{stream_id} ] #{time} ")
-    {:noreply, {device_id, sensor_id, stream_id, newwindow}}
+    {:noreply, {device_id, sensor_id, stream_id, stream, newwindow}}
   end
   
   # private functions
