@@ -10,6 +10,14 @@ defmodule DB.RawTimeseries do
   
   def changeset(struct, params) do
     struct
-    |> cast(params, [:device_id, :sensor_id])
+    |> cast(params, [:time, :value])
+    |> unique_constraint([:time])
+#    |> cast_assoc(params, :stream)
+  end
+  
+  def insert(stream, time, value) do
+    %DB.RawTimeseries{stream: stream, time: time, value: value}
+    |> changeset(%{})
+    |> DB.Repo.insert()
   end
 end

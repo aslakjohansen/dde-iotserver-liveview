@@ -7,5 +7,7 @@ defmodule DdeIotserverLiveview.Repo.Migrations.CreateRawTimeseries do
       add :time, :naive_datetime, null: false
       add :value, :float
     end
+    
+    create unique_index(:raw_timeseries, [:time])
   end
 end
