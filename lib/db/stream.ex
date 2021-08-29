@@ -6,6 +6,7 @@ defmodule DB.Stream do
   schema "streams" do
     field :device_id, :string
     field :sensor_id, :string
+    has_many :derivations, DB.Derivation
   end
   
   def changeset(struct, params) do

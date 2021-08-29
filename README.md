@@ -21,3 +21,20 @@ List stored raw timeseries:
 DB.Repo.all(Ecto.Query.from(DB.RawTimeseries))
 ```
 
+Ensure an analysis:
+```elixir
+a1 = DB.Analysis.ensure("delme1")
+a2 = DB.Analysis.ensure("delme2")
+```
+
+Ensure a stream:
+```elixir
+s = DB.Stream.ensure("deldevice", "delsensor")
+```
+
+Ensure a derivation:
+```elixir
+d1 = DB.Derivation.ensure(s, a1)
+d2 = DB.Derivation.ensure(s, a2)
+```
+
