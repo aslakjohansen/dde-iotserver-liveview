@@ -38,3 +38,8 @@ d1 = DB.Derivation.ensure(s, a1)
 d2 = DB.Derivation.ensure(s, a2)
 ```
 
+Ensure a derived timeseries value:
+```elixir
+dt = DB.DerivedTimeseries.insert(d1, 0, 0, 0.0)
+```
+
