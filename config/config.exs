@@ -11,7 +11,8 @@ config :dde_iotserver_liveview, DB.Repo,
   database: "dde_iotserver_liveview_repo",
   username: "someuser",
   password: "somepassword",
-  hostname: "localhost"
+  hostname: "localhost",
+  log: false # https://stackoverflow.com/questions/30297825/disable-elixir-ecto-debug-output
 
 config :dde_iotserver_liveview,
   ecto_repos: [DdeIotserverLiveview.Repo, DB.Repo]
