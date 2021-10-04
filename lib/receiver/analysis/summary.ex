@@ -1,11 +1,40 @@
 defmodule Receiver.Analysis.Summary do
   use GenServer
   
+#  @analyses [:max, "min", "count", "sum", "tdiffmax", "tdiffmin", "tdiffsum", "diffmax", "diffmin", "diffsum", "diffcount"]
+  @analyses [:max, :min, :count, :sum, :tdiffmax, :tdiffmin, :tdiffsum, :diffmax, :diffmin, :diffsum, :diffcount]
+  @week 1000000000*60*60*24*7
+  @step 60*60
+  @ns2step 1000000000*@step
+  @offset 1000000000*60*60*24*3 # jan 1st 1970 was a thursday
+  
+  # helpers
+  
+  def analysis2derivation(analysis_name, stream) do
+    analysis   = DB.Analysis.ensure(analysis_name)
+    derivation = DB.Derivation.ensure(stream, analysis)
+    {analysis_name, derivation}
+  end
+  
+  def decode_timestamp(time) do
+    offsat = time - @offset
+    period = div(offsat, @week)
+    index  = div(rem(offsat, @week), @ns2step)
+    {period, index}
+  end
+  
   # behaviour functions
   
   def start(device_id, sensor_id, stream_id) do
     stream = DB.Stream.ensure(device_id, sensor_id) # not used
-    GenServer.start(__MODULE__, {device_id, sensor_id, stream_id, stream})
+    
+    
+    derivations =
+    @analyses
+    |> Enum.map(fn name -> analysis2derivation(Atom.to_string(name), stream) end)
+    |> Map.new()
+    
+    GenServer.start(__MODULE__, {device_id, sensor_id, stream_id, derivations})
   end
   
   def consume(pid, payload) do
@@ -15,35 +44,57 @@ defmodule Receiver.Analysis.Summary do
   # callback functions
   
   @impl GenServer
-  def init({device_id, sensor_id, stream_id, stream}) do
+  def init({device_id, sensor_id, stream_id, derivations}) do
     # spawn process that periodically pings :sample. Period from opts
     server_pid = self()
 #    period = 3600/3
 #    period = 60/3
-    period = 60*60
+    period = @step
     _sampler_pid = spawn(fn -> sampler(server_pid, period) end)
     
-    {:ok, {device_id, sensor_id, stream_id, stream, []}}
+    {:ok, {device_id, sensor_id, stream_id, derivations, []}}
   end
   
   @impl GenServer
-  def handle_cast({:consume, payload}, {device_id, sensor_id, stream_id, stream, window}) do
+  def handle_cast({:consume, payload}, {device_id, sensor_id, stream_id, derivations, window}) do
     timestamp = parse_time(Map.get(payload, "TimeStamp"))
     value     = Map.get(payload, "Value")
-    wentry = [t: timestamp, v: value]
+    wentry = [t: timestamp, v: value / 1]
     _time = DateTime.utc_now() |> DateTime.to_unix(:nanosecond)
 #    :ok = IO.puts("consume #{stream_id} #{time} #{timestamp} -> #{value}\n")
-    {:noreply, {device_id, sensor_id, stream_id, stream, [wentry]++window}}
+    {:noreply, {device_id, sensor_id, stream_id, derivations, [wentry]++window}}
   end
   
   @impl GenServer
-  def handle_cast({:sample}, {device_id, sensor_id, stream_id, stream, window}) do
-#    :ok = IO.puts("sample #{stream_id}\n")
+  def handle_cast({:sample}, {device_id, sensor_id, stream_id, derivations, window}) do
+    :ok = IO.puts("sample #{stream_id}\n")
     time = (DateTime.utc_now() |> DateTime.to_unix(:nanosecond)) - 3600*1000000000
-    {newwindow, _result} = analyze(window, time, [], [], nil, stream_id)
+    {newwindow, result} = analyze(window, time, [], [], nil, stream_id)
     _time = DateTime.utc_now() |> DateTime.to_unix(:nanosecond)
 #    IO.inspect(result, label: "Results [ #{stream_id} ] #{time} ")
-    {:noreply, {device_id, sensor_id, stream_id, stream, newwindow}}
+    
+    # insert in database
+    {period, index} = decode_timestamp(time)
+    result
+    |> Enum.each(
+      fn({name, value}) ->
+        name = Atom.to_string(name)
+        IO.puts("- foreach")
+        IO.puts("  - #{name} #{value}")
+        d = Map.fetch!(derivations, name)
+#        IO.puts("  - #{d}")
+        result = derivations
+        |> Map.fetch!(name)
+        |> DB.DerivedTimeseries.insert(period, index, value)
+#        IO.puts("  - sample #{name} #{value} #{result}\n")
+      end
+    )
+    
+#    derivations
+#    |> Map.fetch(:a)
+#    |> DB.DerivedTimeseries.insert(period, index, value)
+    
+    {:noreply, {device_id, sensor_id, stream_id, derivations, newwindow}}
   end
   
   # private functions
@@ -55,7 +106,7 @@ defmodule Receiver.Analysis.Summary do
     newdiffcontext = case last do
       [t: t2, v: v2] ->
         vdiff = v2-value
-        tdiff = t2-timestamp
+        tdiff = (t2-timestamp)/1
         diff = vdiff/tdiff
         if diffcontext==[] do
           [
@@ -65,7 +116,7 @@ defmodule Receiver.Analysis.Summary do
             diffmax: diff,
             diffmin: diff,
             diffsum: diff,
-            diffcount: 1,
+            diffcount: 1.0,
           ]
         else
           [
@@ -84,7 +135,7 @@ defmodule Receiver.Analysis.Summary do
     case timestamp do
       _ when timestamp>threshold ->
         newcontext = if context==[] do
-          [max: value, min: value, count: 1, sum: value]++newdiffcontext
+          [max: value, min: value, count: 1.0, sum: value]++newdiffcontext
         else
           [
             max: max(context[:max], value),
@@ -114,7 +165,7 @@ defmodule Receiver.Analysis.Summary do
   defp sampler(pid, period) do
     GenServer.cast(pid, {:sample})
     period_ms = 1000*period
-#    IO.puts("sampler #{period}")
+    IO.puts("sampler #{period}")
     :timer.sleep(period_ms)
     sampler(pid, period)
   end
